@@ -18,10 +18,13 @@ import com.liferay.apio.architect.functional.Try;
 import com.liferay.apio.architect.identifier.LongIdentifier;
 import com.liferay.apio.architect.pagination.PageItems;
 import com.liferay.apio.architect.pagination.Pagination;
+import com.liferay.apio.architect.representor.Representable;
 import com.liferay.apio.architect.representor.Representor;
-import com.liferay.apio.architect.resource.CollectionResource;
-import com.liferay.apio.architect.resource.ScopedCollectionResource;
-import com.liferay.apio.architect.routes.Routes;
+import com.liferay.apio.architect.resource.NestedCollectionResource;
+import com.liferay.apio.architect.router.ItemRouter;
+import com.liferay.apio.architect.router.NestedCollectionRouter;
+import com.liferay.apio.architect.routes.ItemRoutes;
+import com.liferay.apio.architect.routes.NestedCollectionRoutes;
 import com.liferay.apio.architect.sample.liferay.portal.identifier.AggregateRatingIdentifier;
 import com.liferay.apio.architect.sample.liferay.portal.identifier.CommentableIdentifier;
 import com.liferay.apio.architect.sample.liferay.portal.rating.AggregateRating;
@@ -67,13 +70,42 @@ import org.osgi.service.component.annotations.Reference;
  * @author Carlos Sierra Andrés
  * @author Jorge Ferrer
  */
-@Component(immediate = true, service = CollectionResource.class)
+@Component(
+	immediate = true,
+	service =
+		{ItemRouter.class, NestedCollectionRouter.class, Representable.class}
+)
 public class BlogPostingScopedCollectionResource
-	implements ScopedCollectionResource<BlogsEntry, LongIdentifier> {
+	implements NestedCollectionResource
+		<BlogsEntry, LongIdentifier, WebSite, LongIdentifier> {
+
+	@Override
+	public NestedCollectionRoutes<BlogsEntry> collectionRoutes(
+		NestedCollectionRoutes.Builder<BlogsEntry, LongIdentifier> builder) {
+
+		return builder.addGetter(
+			this::_getPageItems
+		).addCreator(
+			this::_addBlogsEntry
+		).build();
+	}
 
 	@Override
 	public String getName() {
 		return "blog-postings";
+	}
+
+	@Override
+	public ItemRoutes<BlogsEntry> itemRoutes(
+		ItemRoutes.Builder<BlogsEntry, LongIdentifier> builder) {
+
+		return builder.addGetter(
+			this::_getBlogsEntry
+		).addRemover(
+			this::_deleteBlogsEntry
+		).addUpdater(
+			this::_updateBlogsEntry
+		).build();
 	}
 
 	@Override
@@ -116,23 +148,6 @@ public class BlogPostingScopedCollectionResource
 			"fileFormat", blogsEntry -> "text/html"
 		).addString(
 			"headline", BlogsEntry::getTitle
-		).build();
-	}
-
-	@Override
-	public Routes<BlogsEntry> routes(
-		Routes.Builder<BlogsEntry, LongIdentifier> builder) {
-
-		return builder.addCollectionPageGetter(
-			this::_getPageItems, LongIdentifier.class
-		).addCollectionPageItemCreator(
-			this::_addBlogsEntry, LongIdentifier.class
-		).addCollectionPageItemGetter(
-			this::_getBlogsEntry
-		).addCollectionPageItemRemover(
-			this::_deleteBlogsEntry
-		).addCollectionPageItemUpdater(
-			this::_updateBlogsEntry
 		).build();
 	}
 

@@ -14,17 +14,20 @@
 
 package com.liferay.apio.architect.sample.liferay.portal.internal.resource;
 
+import com.liferay.announcements.kernel.exception.NoSuchEntryException;
 import com.liferay.apio.architect.functional.Try;
 import com.liferay.apio.architect.identifier.LongIdentifier;
 import com.liferay.apio.architect.pagination.PageItems;
 import com.liferay.apio.architect.pagination.Pagination;
+import com.liferay.apio.architect.representor.Representable;
 import com.liferay.apio.architect.representor.Representor;
-import com.liferay.apio.architect.resource.CollectionResource;
-import com.liferay.apio.architect.resource.ScopedCollectionResource;
-import com.liferay.apio.architect.routes.Routes;
+import com.liferay.apio.architect.resource.NestedCollectionResource;
+import com.liferay.apio.architect.router.ItemRouter;
+import com.liferay.apio.architect.router.NestedCollectionRouter;
+import com.liferay.apio.architect.routes.ItemRoutes;
+import com.liferay.apio.architect.routes.NestedCollectionRoutes;
 import com.liferay.apio.architect.sample.liferay.portal.website.WebSite;
 import com.liferay.apio.architect.sample.liferay.portal.website.WebSiteService;
-import com.liferay.blogs.kernel.exception.NoSuchEntryException;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.service.DLFolderService;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -50,13 +53,42 @@ import org.osgi.service.component.annotations.Reference;
  *
  * @author Javier Gamarra
  */
-@Component(immediate = true, service = CollectionResource.class)
+@Component(
+	immediate = true,
+	service =
+		{ItemRouter.class, NestedCollectionRouter.class, Representable.class}
+)
 public class FolderScopedCollectionResource
-	implements ScopedCollectionResource<DLFolder, LongIdentifier> {
+	implements NestedCollectionResource
+		<DLFolder, LongIdentifier, WebSite, LongIdentifier> {
+
+	@Override
+	public NestedCollectionRoutes<DLFolder> collectionRoutes(
+		NestedCollectionRoutes.Builder<DLFolder, LongIdentifier> builder) {
+
+		return builder.addGetter(
+			this::_getPageItems
+		).addCreator(
+			this::_addDLFolder
+		).build();
+	}
 
 	@Override
 	public String getName() {
 		return "folders";
+	}
+
+	@Override
+	public ItemRoutes<DLFolder> itemRoutes(
+		ItemRoutes.Builder<DLFolder, LongIdentifier> builder) {
+
+		return builder.addGetter(
+			this::_getDLFolder
+		).addRemover(
+			this::_deleteDLFolder
+		).addUpdater(
+			this::_updateDLFolder
+		).build();
 	}
 
 	@Override
@@ -80,23 +112,6 @@ public class FolderScopedCollectionResource
 			"name", DLFolder::getName
 		).addString(
 			"path", this::_getPath
-		).build();
-	}
-
-	@Override
-	public Routes<DLFolder> routes(
-		Routes.Builder<DLFolder, LongIdentifier> builder) {
-
-		return builder.addCollectionPageGetter(
-			this::_getPageItems, LongIdentifier.class
-		).addCollectionPageItemCreator(
-			this::_addDLFolder, LongIdentifier.class
-		).addCollectionPageItemGetter(
-			this::_getDLFolder
-		).addCollectionPageItemRemover(
-			this::_deleteDLFolder
-		).addCollectionPageItemUpdater(
-			this::_updateDLFolder
 		).build();
 	}
 
